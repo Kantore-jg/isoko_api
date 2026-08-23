@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MerchantController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PlaceAssignmentController;
 use App\Http\Controllers\Api\PlaceController;
+use App\Http\Controllers\Api\SpreadsheetController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\RentObligationController;
 use App\Http\Controllers\Api\RentPeriodController;
@@ -53,11 +54,20 @@ Route::middleware('auth.api')->group(function (): void {
 
     Route::middleware('permission:payments.manage')->group(function (): void {
         Route::apiResource('payments', PaymentController::class)->only(['index', 'store', 'show']);
+        Route::post('payments/preview-allocation', [PaymentController::class, 'previewAllocation']);
         Route::post('payments/{payment}/void', [PaymentController::class, 'void']);
     });
 
     Route::middleware('permission:receipts.manage')->group(function (): void {
         Route::apiResource('receipts', ReceiptController::class)->only(['index', 'show']);
         Route::post('receipts/{receipt}/cancel', [ReceiptController::class, 'cancel']);
+    });
+
+    Route::middleware('permission:exports.manage')->group(function (): void {
+        Route::get('exports/excel', [SpreadsheetController::class, 'export']);
+    });
+
+    Route::middleware('permission:imports.manage')->group(function (): void {
+        Route::post('imports/excel', [SpreadsheetController::class, 'import']);
     });
 });

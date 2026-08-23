@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ImportRow extends Model
 {
     protected $table = 'import_rows';
+    public $timestamps = false;
 
     protected $fillable = [
         'import_id',

@@ -24,6 +24,7 @@ Backend Laravel du projet Market Management.
 - CRUD `rent-periods` + `POST /api/rent-periods/{rentPeriod}/generate-obligations`
 - CRUD `rent-obligations`
 - CRUD `payments` + `POST /api/payments/{payment}/void`
+- `POST /api/payments/preview-allocation`
 - CRUD `receipts` + `POST /api/receipts/{receipt}/cancel`
 
 ## Auth

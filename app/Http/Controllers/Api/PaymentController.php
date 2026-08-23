@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Receipt;
 use App\Models\RentObligation;
+use App\Services\PaymentAllocationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
+    public function __construct(
+        private readonly PaymentAllocationService $allocationService
+    ) {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Payment::query()->with(['merchant', 'bank', 'receipt', 'allocations.obligation.period'])->orderByDesc('payment_date');
@@ -43,41 +49,18 @@ class PaymentController extends Controller
             'payment_method' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
             'received_by' => ['nullable', 'exists:users,id'],
-            'allocations' => ['required', 'array', 'min:1'],
+            'auto_allocate' => ['nullable', 'boolean'],
+            'as_of_date' => ['nullable', 'date'],
+            'allocations' => ['nullable', 'array', 'min:1'],
             'allocations.*.rent_obligation_id' => ['required', 'exists:rent_obligations,id'],
             'allocations.*.amount_allocated' => ['required', 'numeric', 'min:0.01'],
         ]);
 
-        $allocationSum = round((float) collect($data['allocations'])->sum('amount_allocated'), 2);
-        if ($allocationSum !== round((float) $data['amount'], 2)) {
-            return response()->json([
-                'message' => 'La somme des allocations doit être égale au montant du paiement.',
-            ], 422);
-        }
-
-        $obligations = RentObligation::query()
-            ->whereIn('id', collect($data['allocations'])->pluck('rent_obligation_id')->all())
-            ->get()
-            ->keyBy('id');
-
-        foreach ($data['allocations'] as $allocationData) {
-            $obligation = $obligations->get($allocationData['rent_obligation_id']);
-            if (! $obligation) {
-                throw ValidationException::withMessages([
-                    'allocations' => 'Une obligation de loyer est introuvable.',
-                ]);
-            }
-
-            if ((int) $obligation->merchant_id !== (int) $data['merchant_id']) {
-                throw ValidationException::withMessages([
-                    'allocations' => 'Chaque allocation doit appartenir au même commerçant que le paiement.',
-                ]);
-            }
-        }
+        $allocations = $this->resolveAllocations($data);
 
         $user = $request->user();
 
-        $payment = DB::transaction(function () use ($data, $user, $obligations) {
+        $payment = DB::transaction(function () use ($data, $user, $allocations) {
             $payment = Payment::query()->create([
                 'payment_number' => 'PAY-' . Str::upper(Str::random(10)),
                 'merchant_id' => $data['merchant_id'],
@@ -92,7 +75,7 @@ class PaymentController extends Controller
                 'posted_at' => now(),
             ]);
 
-            foreach ($data['allocations'] as $allocationData) {
+            foreach ($allocations as $allocationData) {
                 $obligation = RentObligation::query()->lockForUpdate()->findOrFail($allocationData['rent_obligation_id']);
 
                 PaymentAllocation::query()->create([
@@ -137,6 +120,23 @@ class PaymentController extends Controller
             'message' => 'Paiement enregistré.',
             'data' => $payment->load(['merchant', 'bank', 'receipt', 'allocations.obligation.period']),
         ], 201);
+    }
+
+    public function previewAllocation(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'merchant_id' => ['required', 'exists:merchants,id'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'as_of_date' => ['nullable', 'date'],
+        ]);
+
+        return response()->json([
+            'data' => $this->allocationService->buildForMerchant(
+                (int) $data['merchant_id'],
+                (float) $data['amount'],
+                $data['as_of_date'] ?? null
+            ),
+        ]);
     }
 
     public function show(Payment $payment): JsonResponse
@@ -200,5 +200,64 @@ class PaymentController extends Controller
             'message' => 'Paiement annulé.',
             'data' => $payment->fresh()->load(['merchant', 'bank', 'receipt', 'allocations.obligation.period']),
         ]);
+    }
+
+    private function resolveAllocations(array $data): array
+    {
+        if (! empty($data['allocations'])) {
+            $allocationSum = round((float) collect($data['allocations'])->sum('amount_allocated'), 2);
+            if ($allocationSum !== round((float) $data['amount'], 2)) {
+                throw ValidationException::withMessages([
+                    'allocations' => 'La somme des allocations doit être égale au montant du paiement.',
+                ]);
+            }
+
+            $obligations = RentObligation::query()
+                ->whereIn('id', collect($data['allocations'])->pluck('rent_obligation_id')->all())
+                ->get()
+                ->keyBy('id');
+
+            foreach ($data['allocations'] as $allocationData) {
+                $obligation = $obligations->get($allocationData['rent_obligation_id']);
+                if (! $obligation) {
+                    throw ValidationException::withMessages([
+                        'allocations' => 'Une obligation de loyer est introuvable.',
+                    ]);
+                }
+
+                if ((int) $obligation->merchant_id !== (int) $data['merchant_id']) {
+                    throw ValidationException::withMessages([
+                        'allocations' => 'Chaque allocation doit appartenir au même commerçant que le paiement.',
+                    ]);
+                }
+            }
+
+            return $data['allocations'];
+        }
+
+        if (! ($data['auto_allocate'] ?? false)) {
+            throw ValidationException::withMessages([
+                'allocations' => 'Fournissez des allocations manuelles ou activez auto_allocate.',
+            ]);
+        }
+
+        $preview = $this->allocationService->buildForMerchant(
+            (int) $data['merchant_id'],
+            (float) $data['amount'],
+            $data['as_of_date'] ?? null
+        );
+
+        if (round((float) $preview['remaining'], 2) > 0.0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Le montant dépasse le total des loyers impayés disponibles pour allocation.',
+            ]);
+        }
+
+        return collect($preview['allocations'])->map(function (array $allocation): array {
+            return [
+                'rent_obligation_id' => $allocation['rent_obligation_id'],
+                'amount_allocated' => $allocation['amount_allocated'],
+            ];
+        })->all();
     }
 }

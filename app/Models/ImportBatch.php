@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ImportBatch extends Model
 {
     protected $table = 'imports';
+    public $timestamps = false;
 
     protected $fillable = [
         'user_id',
