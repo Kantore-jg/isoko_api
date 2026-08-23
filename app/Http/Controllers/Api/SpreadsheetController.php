@@ -38,12 +38,15 @@ class SpreadsheetController extends Controller
         $scope = $request->string('scope')->trim()->lower()->toString() ?: 'all';
         $sheets = $this->exportSheets($scope);
 
-        $path = $this->workbookService->createWorkbookFile($sheets, 'market-export');
-        $filename = sprintf('market-%s-%s.xlsx', $scope, now()->format('Ymd-His'));
+        return $this->downloadWorkbook($sheets, sprintf('market-%s', $scope), 'export');
+    }
 
-        return response()->download($path, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+    public function template(Request $request)
+    {
+        $scope = $request->string('scope')->trim()->lower()->toString() ?: 'all';
+        $sheets = $this->templateSheets($scope);
+
+        return $this->downloadWorkbook($sheets, sprintf('market-template-%s', $scope), 'template');
     }
 
     public function import(Request $request): JsonResponse
@@ -149,6 +152,32 @@ class SpreadsheetController extends Controller
 
         if ($scope === 'finance') {
             return array_intersect_key($allSheets, array_flip(['banks', 'rent_periods', 'rent_obligations', 'payments', 'receipts']));
+        }
+
+        return $allSheets;
+    }
+
+    /**
+     * @return array<string, array<int, array<int, mixed>>>
+     */
+    private function templateSheets(string $scope): array
+    {
+        $allSheets = [
+            'blocks' => $this->templateBlocks(),
+            'places' => $this->templatePlaces(),
+            'merchants' => $this->templateMerchants(),
+            'banks' => $this->templateBanks(),
+            'assignments' => $this->templateAssignments(),
+            'rent_periods' => $this->templateRentPeriods(),
+            'instructions' => $this->templateInstructions(),
+        ];
+
+        if ($scope === 'structure') {
+            return array_intersect_key($allSheets, array_flip(['blocks', 'places', 'merchants', 'banks', 'assignments', 'instructions']));
+        }
+
+        if ($scope === 'finance') {
+            return array_intersect_key($allSheets, array_flip(['banks', 'rent_periods', 'instructions']));
         }
 
         return $allSheets;
@@ -339,6 +368,87 @@ class SpreadsheetController extends Controller
                 'status' => $row['status'] ?: 'ACTIVE',
             ]
         );
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templateBlocks(): array
+    {
+        return [
+            ['code', 'name', 'description', 'default_rent_amount', 'status'],
+            ['BLK-001', 'Bloc Central', 'Exemple', 50000, 'ACTIVE'],
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templatePlaces(): array
+    {
+        return [
+            ['block_code', 'code', 'name', 'description', 'surface', 'type', 'status'],
+            ['BLK-001', 'PL-001', 'Place 1', 'Exemple', 12.5, 'STANDARD', 'AVAILABLE'],
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templateMerchants(): array
+    {
+        return [
+            ['merchant_code', 'business_name', 'owner_name', 'national_id', 'phone', 'phone_secondary', 'email', 'address', 'business_type', 'registration_number', 'tax_number', 'status', 'registration_date', 'notes'],
+            ['MER-001', 'Boutique Exemple', 'Jean', null, '+25770000000', null, 'merchant@example.test', null, 'Retail', null, null, 'ACTIVE', '2026-08-23', ''],
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templateBanks(): array
+    {
+        return [
+            ['code', 'name', 'account_name', 'account_number', 'branch', 'description', 'status'],
+            ['BANK-001', 'Banque Exemple', null, null, null, null, 'ACTIVE'],
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templateAssignments(): array
+    {
+        return [
+            ['place_code', 'merchant_code', 'start_date', 'end_date', 'rent_amount', 'status', 'assignment_reason', 'notes'],
+            ['PL-001', 'MER-001', '2026-08-01', null, 50000, 'ACTIVE', 'Affectation initiale', null],
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templateRentPeriods(): array
+    {
+        return [
+            ['year', 'month', 'period_start', 'period_end', 'due_date', 'status', 'closed_at'],
+            [2026, 8, '2026-08-01', '2026-08-31', '2026-08-10', 'OPEN', null],
+        ];
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    private function templateInstructions(): array
+    {
+        return [
+            ['sheet', 'usage'],
+            ['blocks', 'Créer les blocs avant les places.'],
+            ['places', 'Renseigner block_code avec le code du bloc.'],
+            ['merchants', 'Créer les commerçants avant les affectations.'],
+            ['assignments', 'Une affectation active relie un commerçant à une place.'],
+            ['rent_periods', 'Les périodes servent à générer les obligations.'],
+        ];
     }
 
     /**
@@ -625,5 +735,16 @@ class SpreadsheetController extends Controller
         }
 
         return $rows;
+    }
+
+    private function downloadWorkbook(array $sheets, string $prefix, string $kind)
+    {
+        $path = $this->workbookService->createWorkbookFile($sheets, $prefix);
+        $filename = sprintf('%s-%s.xlsx', $prefix, now()->format('Ymd-His'));
+
+        return response()->download($path, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'X-Workbook-Kind' => $kind,
+        ])->deleteFileAfterSend(true);
     }
 }

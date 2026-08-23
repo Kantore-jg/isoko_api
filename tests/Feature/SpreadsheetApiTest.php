@@ -46,6 +46,24 @@ class SpreadsheetApiTest extends ApiTestCase
         $this->assertSame('EXP-BLK', $workbook['blocks'][1][0] ?? null);
     }
 
+    public function test_template_returns_fillable_workbook(): void
+    {
+        [, $token] = $this->makeUserWithToken('SUPER_ADMIN', ['imports.manage']);
+
+        $response = $this->get('/api/imports/template-excel', $this->authHeaders($token));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $path = $response->baseResponse->getFile()->getPathname();
+        $workbook = app(ExcelWorkbookService::class)->readWorkbook($path);
+
+        $this->assertArrayHasKey('blocks', $workbook);
+        $this->assertArrayHasKey('instructions', $workbook);
+        $this->assertSame('code', $workbook['blocks'][0][0] ?? null);
+        $this->assertSame('sheet', $workbook['instructions'][0][0] ?? null);
+    }
+
     public function test_import_creates_core_entities_from_an_xlsx_workbook(): void
     {
         [, $token] = $this->makeUserWithToken('SUPER_ADMIN', ['imports.manage']);

@@ -69,5 +69,6 @@ Route::middleware('auth.api')->group(function (): void {
 
     Route::middleware('permission:imports.manage')->group(function (): void {
         Route::post('imports/excel', [SpreadsheetController::class, 'import']);
+        Route::get('imports/template-excel', [SpreadsheetController::class, 'template']);
     });
 });
