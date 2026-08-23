@@ -25,7 +25,7 @@ class PaymentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Payment::query()->with(['merchant', 'bank', 'receipt', 'allocations.obligation.period'])->orderByDesc('payment_date');
+        $query = Payment::query()->with(['merchant', 'bank', 'receipt', 'receiver', 'allocations.obligation.period'])->orderByDesc('payment_date');
 
         if ($status = $request->string('status')->trim()) {
             $query->where('status', $status->toString());
@@ -118,7 +118,7 @@ class PaymentController extends Controller
 
         return response()->json([
             'message' => 'Paiement enregistré.',
-            'data' => $payment->load(['merchant', 'bank', 'receipt', 'allocations.obligation.period']),
+            'data' => $payment->load(['merchant', 'bank', 'receipt', 'receiver', 'allocations.obligation.period']),
         ], 201);
     }
 
@@ -142,7 +142,7 @@ class PaymentController extends Controller
     public function show(Payment $payment): JsonResponse
     {
         return response()->json([
-            'data' => $payment->load(['merchant', 'bank', 'receipt', 'allocations.obligation.period']),
+            'data' => $payment->load(['merchant', 'bank', 'receipt', 'receiver', 'allocations.obligation.period']),
         ]);
     }
 
@@ -198,7 +198,7 @@ class PaymentController extends Controller
 
         return response()->json([
             'message' => 'Paiement annulé.',
-            'data' => $payment->fresh()->load(['merchant', 'bank', 'receipt', 'allocations.obligation.period']),
+            'data' => $payment->fresh()->load(['merchant', 'bank', 'receipt', 'receiver', 'allocations.obligation.period']),
         ]);
     }
 

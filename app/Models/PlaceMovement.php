@@ -29,4 +29,34 @@ class PlaceMovement extends Model
             'created_at' => 'datetime',
         ];
     }
+
+    public function place()
+    {
+        return $this->belongsTo(Place::class);
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class);
+    }
+
+    public function assignment()
+    {
+        return $this->belongsTo(PlaceAssignment::class, 'assignment_id');
+    }
+
+    public function previousMerchant()
+    {
+        return $this->belongsTo(Merchant::class, 'previous_merchant_id');
+    }
+
+    public function newMerchant()
+    {
+        return $this->belongsTo(Merchant::class, 'new_merchant_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

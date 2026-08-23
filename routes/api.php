@@ -2,18 +2,24 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\BankController;
 use App\Http\Controllers\Api\BlockController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\MerchantController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PlaceAssignmentController;
+use App\Http\Controllers\Api\MovementController;
 use App\Http\Controllers\Api\PlaceController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\SpreadsheetController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\RentObligationController;
 use App\Http\Controllers\Api\RentPeriodController;
+use App\Http\Controllers\Api\UserController;
 
 Route::get('health', HealthController::class);
 Route::post('auth/login', [AuthController::class, 'login']);
@@ -24,6 +30,30 @@ Route::middleware('auth.api')->group(function (): void {
 
     Route::get('dashboard/summary', [DashboardController::class, 'summary'])
         ->middleware('permission:dashboard.view,reports.view');
+
+    Route::middleware('permission:roles.manage')->group(function (): void {
+        Route::apiResource('roles', RoleController::class);
+    });
+
+    Route::middleware('permission:permissions.manage')->group(function (): void {
+        Route::apiResource('permissions', PermissionController::class);
+    });
+
+    Route::middleware('permission:users.manage')->group(function (): void {
+        Route::apiResource('users', UserController::class);
+    });
+
+    Route::middleware('permission:settings.manage')->group(function (): void {
+        Route::get('settings', [SettingController::class, 'index']);
+        Route::put('settings', [SettingController::class, 'update']);
+        Route::patch('settings', [SettingController::class, 'update']);
+    });
+
+    Route::middleware('permission:reports.view')->group(function (): void {
+        Route::get('movements', [MovementController::class, 'index']);
+        Route::get('movements/{movement}', [MovementController::class, 'show']);
+        Route::get('audit-logs', [AuditLogController::class, 'index']);
+    });
 
     Route::middleware('permission:blocks.manage')->group(function (): void {
         Route::apiResource('blocks', BlockController::class);
