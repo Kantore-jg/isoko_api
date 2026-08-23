@@ -19,6 +19,12 @@ Backend Laravel du projet Market Management.
 - `GET /api/auth/me`
 - `POST /api/auth/logout`
 - `GET /api/dashboard/summary`
+- CRUD `blocks`, `places`, `merchants`, `banks`
+- CRUD `assignments` + `POST /api/assignments/{assignment}/terminate`
+- CRUD `rent-periods` + `POST /api/rent-periods/{rentPeriod}/generate-obligations`
+- CRUD `rent-obligations`
+- CRUD `payments` + `POST /api/payments/{payment}/void`
+- CRUD `receipts` + `POST /api/receipts/{receipt}/cancel`
 
 ## Auth
 

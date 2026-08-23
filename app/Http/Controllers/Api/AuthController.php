@@ -22,8 +22,10 @@ class AuthController extends Controller
 
         $user = User::query()
             ->with('role.permissions')
-            ->where('username', $data['login'])
-            ->orWhere('email', $data['login'])
+            ->where(function ($query) use ($data): void {
+                $query->where('username', $data['login'])
+                    ->orWhere('email', $data['login']);
+            })
             ->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password) || $user->status !== 'ACTIVE') {
