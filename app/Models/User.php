@@ -117,12 +117,10 @@ class User extends Authenticatable
 
     public function resolvedPermissionCodes(): array
     {
-        $permissionCodes = $this->role?->permissions?->pluck('code')->values()->all() ?? [];
+        $roleCode = $this->role?->code ?? '';
+        $fallbackPermissionCodes = self::FALLBACK_ROLE_PERMISSIONS[$roleCode] ?? [];
+        $databasePermissionCodes = $this->role?->permissions?->pluck('code')->values()->all() ?? [];
 
-        if ($permissionCodes !== []) {
-            return $permissionCodes;
-        }
-
-        return self::FALLBACK_ROLE_PERMISSIONS[$this->role?->code ?? ''] ?? [];
+        return array_values(array_unique(array_filter(array_merge($fallbackPermissionCodes, $databasePermissionCodes))));
     }
 }
