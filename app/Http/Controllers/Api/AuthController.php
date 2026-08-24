@@ -38,7 +38,7 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'name' => $data['device_name'] ?? 'API Token',
             'token_hash' => hash('sha256', $plainToken),
-            'abilities' => $user->role?->permissions?->pluck('code')->values()->all() ?? [],
+            'abilities' => $user->resolvedPermissionCodes(),
             'expires_at' => now()->addDays(30),
         ]);
 
@@ -74,7 +74,7 @@ class AuthController extends Controller
 
     private function userPayload(User $user): array
     {
-        $permissions = $user->role?->permissions?->pluck('code')->values()->all() ?? [];
+        $permissions = $user->resolvedPermissionCodes();
 
         return [
             'id' => $user->id,

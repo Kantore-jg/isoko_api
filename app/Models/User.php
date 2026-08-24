@@ -12,6 +12,48 @@ class User extends Authenticatable
     use Notifiable;
     use SoftDeletes;
 
+    private const FALLBACK_ROLE_PERMISSIONS = [
+        'SUPER_ADMIN' => [
+            'dashboard.view',
+            'blocks.manage',
+            'places.manage',
+            'merchants.manage',
+            'banks.manage',
+            'assignments.manage',
+            'rents.manage',
+            'payments.manage',
+            'receipts.manage',
+            'imports.manage',
+            'exports.manage',
+            'users.manage',
+            'roles.manage',
+            'permissions.manage',
+            'settings.manage',
+            'reports.view',
+        ],
+        'ADMIN' => [
+            'dashboard.view',
+            'blocks.manage',
+            'places.manage',
+            'merchants.manage',
+            'assignments.manage',
+            'imports.manage',
+            'exports.manage',
+            'users.manage',
+            'settings.manage',
+            'reports.view',
+        ],
+        'ACCOUNTANT' => [
+            'dashboard.view',
+            'banks.manage',
+            'rents.manage',
+            'payments.manage',
+            'receipts.manage',
+            'exports.manage',
+            'reports.view',
+        ],
+    ];
+
     protected $fillable = [
         'role_id',
         'name',
@@ -53,11 +95,30 @@ class User extends Authenticatable
 
     public function hasPermission(string $permissionCode): bool
     {
-        return $this->role?->permissions()->where('code', $permissionCode)->exists() ?? false;
+        return in_array($permissionCode, $this->resolvedPermissionCodes(), true);
     }
 
     public function hasAnyPermission(array $permissionCodes): bool
     {
-        return $this->role?->permissions()->whereIn('code', $permissionCodes)->exists() ?? false;
+        $resolved = $this->resolvedPermissionCodes();
+
+        foreach ($permissionCodes as $permissionCode) {
+            if (in_array($permissionCode, $resolved, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function resolvedPermissionCodes(): array
+    {
+        $permissionCodes = $this->role?->permissions?->pluck('code')->values()->all() ?? [];
+
+        if ($permissionCodes !== []) {
+            return $permissionCodes;
+        }
+
+        return self::FALLBACK_ROLE_PERMISSIONS[$this->role?->code ?? ''] ?? [];
     }
 }
