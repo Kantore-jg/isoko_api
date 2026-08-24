@@ -157,6 +157,8 @@ class AdminApiTest extends ApiTestCase
     {
         [, $token] = $this->makeUserWithToken('ADMIN', ['dashboard.view']);
 
+        dump(User::first()->resolvedPermissionCodes());
+
         $this->getJson('/api/users', $this->authHeaders($token))
             ->assertForbidden();
     }

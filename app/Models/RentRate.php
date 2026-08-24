@@ -34,4 +34,9 @@ class RentRate extends Model
     {
         return $this->belongsTo(Place::class);
     }
+
+    public function assignments()
+    {
+        return $this->hasMany(PlaceAssignment::class);
+    }
 }

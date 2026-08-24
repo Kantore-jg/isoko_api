@@ -17,18 +17,20 @@ abstract class ApiTestCase extends TestCase
 
     protected function makeRole(string $code, array $permissionCodes = []): Role
     {
-        $role = Role::query()->create([
-            'name' => str_replace('_', ' ', Str::title(strtolower($code))),
-            'code' => $code,
-            'description' => null,
-        ]);
+        $role = Role::query()->firstOrCreate(
+            ['code' => $code],
+            [
+                'name'        => str_replace('_', ' ', Str::title(strtolower($code))),
+                'description' => null,
+            ]
+        );
 
         foreach ($permissionCodes as $permissionCode) {
             $permission = Permission::query()->firstOrCreate(
                 ['code' => $permissionCode],
                 [
-                    'name' => $permissionCode,
-                    'module' => Str::before($permissionCode, '.'),
+                    'name'        => $permissionCode,
+                    'module'      => Str::before($permissionCode, '.'),
                     'description' => null,
                 ]
             );

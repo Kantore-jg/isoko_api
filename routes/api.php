@@ -19,10 +19,11 @@ use App\Http\Controllers\Api\SpreadsheetController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\RentObligationController;
 use App\Http\Controllers\Api\RentPeriodController;
+use App\Http\Controllers\Api\RentRateController;
 use App\Http\Controllers\Api\UserController;
 
 Route::get('health', HealthController::class);
-Route::post('auth/login', [AuthController::class, 'login']);
+Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
 Route::middleware('auth.api')->group(function (): void {
     Route::get('auth/me', [AuthController::class, 'me']);
@@ -77,6 +78,7 @@ Route::middleware('auth.api')->group(function (): void {
     });
 
     Route::middleware('permission:rents.manage')->group(function (): void {
+        Route::apiResource('rent-rates', RentRateController::class);
         Route::apiResource('rent-periods', RentPeriodController::class);
         Route::post('rent-periods/{rentPeriod}/generate-obligations', [RentPeriodController::class, 'generateObligations']);
         Route::apiResource('rent-obligations', RentObligationController::class)->only(['index', 'show', 'update']);
