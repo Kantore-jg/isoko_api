@@ -14,7 +14,8 @@ class RoleController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Role::query()
-            ->with(['permissions:id,code,name,module'])
+            ->select(['id', 'code', 'name', 'description', 'created_at', 'updated_at'])
+            ->with(['permissions:id,code,name'])
             ->withCount('users')
             ->orderBy('code');
 

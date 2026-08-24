@@ -12,7 +12,10 @@ class BankController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Bank::query()->withCount('payments')->orderBy('name');
+        $query = Bank::query()
+            ->select(['id', 'code', 'name', 'account_name', 'account_number', 'branch', 'description', 'status', 'created_at', 'updated_at'])
+            ->withCount('payments')
+            ->orderBy('name');
 
         if ($status = $request->string('status')->trim()) {
             $query->where('status', $status->toString());

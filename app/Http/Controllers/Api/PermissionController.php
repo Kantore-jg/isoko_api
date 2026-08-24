@@ -12,6 +12,7 @@ class PermissionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Permission::query()
+            ->select(['id', 'code', 'name', 'module', 'description', 'created_at', 'updated_at'])
             ->withCount('roles')
             ->orderBy('module')
             ->orderBy('code');

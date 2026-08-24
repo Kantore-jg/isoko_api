@@ -12,7 +12,31 @@ class MovementController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = PlaceMovement::query()
-            ->with(['place.block', 'merchant', 'assignment', 'previousMerchant', 'newMerchant', 'creator.role'])
+            ->select([
+                'id',
+                'place_id',
+                'merchant_id',
+                'assignment_id',
+                'previous_merchant_id',
+                'new_merchant_id',
+                'movement_type',
+                'movement_date',
+                'reason',
+                'notes',
+                'created_by',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'place:id,block_id,code',
+                'place.block:id,code,name',
+                'merchant:id,business_name,merchant_code',
+                'assignment:id,place_id,merchant_id,status,start_date,end_date,rent_amount',
+                'previousMerchant:id,business_name,merchant_code',
+                'newMerchant:id,business_name,merchant_code',
+                'creator:id,name,role_id',
+                'creator.role:id,code,name',
+            ])
             ->orderByDesc('created_at');
 
         if ($placeId = $request->integer('place_id')) {

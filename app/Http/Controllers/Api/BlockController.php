@@ -11,7 +11,10 @@ class BlockController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Block::query()->withCount('places')->orderBy('code');
+        $query = Block::query()
+            ->select(['id', 'code', 'name', 'description', 'default_rent_amount', 'status', 'created_at', 'updated_at'])
+            ->withCount('places')
+            ->orderBy('code');
 
         if ($search = trim((string) $request->string('q'))) {
             $query->where(function ($builder) use ($search): void {

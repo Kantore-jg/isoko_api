@@ -11,7 +11,15 @@ class ReceiptController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Receipt::query()->with(['payment.merchant', 'payment.bank', 'issuer'])->orderByDesc('receipt_date');
+        $query = Receipt::query()
+            ->select(['id', 'payment_id', 'receipt_number', 'receipt_date', 'issued_by', 'status', 'document_path', 'created_at', 'updated_at'])
+            ->with([
+                'payment:id,merchant_id,bank_id,payment_date,amount,reference_number,payment_method,status,received_by,posted_at',
+                'payment.merchant:id,business_name,merchant_code',
+                'payment.bank:id,code,name',
+                'issuer:id,name,role_id',
+            ])
+            ->orderByDesc('receipt_date');
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 

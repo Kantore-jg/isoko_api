@@ -12,7 +12,10 @@ class PlaceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Place::query()->with(['block:id,code,name'])->orderBy('code');
+        $query = Place::query()
+            ->select(['id', 'block_id', 'code', 'name', 'description', 'surface', 'type', 'status', 'created_at', 'updated_at'])
+            ->with(['block:id,code,name'])
+            ->orderBy('code');
 
         if ($blockId = $request->integer('block_id')) {
             $query->where('block_id', $blockId);

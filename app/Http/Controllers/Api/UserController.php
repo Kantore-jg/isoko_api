@@ -15,8 +15,8 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = User::query()
-            ->with(['role.permissions'])
-            ->withCount('apiTokens')
+            ->select(['id', 'role_id', 'name', 'username', 'email', 'phone', 'status', 'created_at', 'updated_at'])
+            ->with(['role:id,code,name'])
             ->orderBy('name');
 
         if ($status = $request->string('status')->trim()) {

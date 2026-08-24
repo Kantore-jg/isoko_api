@@ -12,7 +12,25 @@ class MerchantController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Merchant::query()->with(['assignments.place.block'])->orderBy('business_name');
+        $query = Merchant::query()
+            ->select([
+                'id',
+                'merchant_code',
+                'business_name',
+                'owner_name',
+                'national_id',
+                'phone',
+                'phone_secondary',
+                'email',
+                'address',
+                'business_type',
+                'status',
+                'registration_date',
+                'notes',
+                'created_at',
+                'updated_at',
+            ])
+            ->orderBy('business_name');
 
         if ($status = $request->string('status')->trim()) {
             $query->where('status', $status->toString());

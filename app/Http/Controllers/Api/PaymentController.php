@@ -25,7 +25,35 @@ class PaymentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Payment::query()->with(['merchant', 'bank', 'receipt', 'receiver', 'allocations.obligation.period'])->orderByDesc('payment_date');
+        $query = Payment::query()
+            ->select([
+                'id',
+                'merchant_id',
+                'payment_date',
+                'amount',
+                'bank_id',
+                'reference_number',
+                'payment_method',
+                'status',
+                'notes',
+                'received_by',
+                'posted_at',
+                'voided_at',
+                'void_reason',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'merchant:id,business_name,merchant_code',
+                'bank:id,code,name',
+                'receipt:id,payment_id,receipt_number,receipt_date,status,issued_by',
+                'receiver:id,name,role_id',
+                'receiver.role:id,code,name',
+                'allocations:id,payment_id,rent_obligation_id,amount_allocated',
+                'allocations.obligation:id,place_id,merchant_id,period_id,period_year,period_month,period_label,amount_expected,amount_paid,balance,status,due_date,paid_at',
+                'allocations.obligation.period:id,year,month,label',
+            ])
+            ->orderByDesc('payment_date');
 
         if ($status = $request->string('status')->trim()) {
             $query->where('status', $status->toString());

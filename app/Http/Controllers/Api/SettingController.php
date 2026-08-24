@@ -7,6 +7,7 @@ use App\Models\Market;
 use App\Models\SystemSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -14,12 +15,14 @@ class SettingController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json([
-            'market' => Market::query()->first(),
-            'settings' => SystemSetting::query()
-                ->orderBy('key')
-                ->get(),
-        ]);
+        return response()->json(Cache::remember('settings.payload', now()->addMinutes(5), function (): array {
+            return [
+                'market' => Market::query()->first(),
+                'settings' => SystemSetting::query()
+                    ->orderBy('key')
+                    ->get(),
+            ];
+        }));
     }
 
     public function update(Request $request): JsonResponse
@@ -64,6 +67,8 @@ class SettingController extends Controller
                 );
             }
         });
+
+        Cache::forget('settings.payload');
 
         return response()->json([
             'message' => 'Paramètres mis à jour.',
