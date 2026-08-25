@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\ApiToken;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthApiTest extends ApiTestCase
 {
@@ -31,7 +31,7 @@ class AuthApiTest extends ApiTestCase
             ->assertJsonPath('user.username', 'accountant')
             ->assertJsonPath('user.role.code', 'ACCOUNTANT');
 
-        $this->assertDatabaseCount('api_tokens', 1);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
     public function test_me_requires_valid_token_and_logout_revokes_token(): void
@@ -45,11 +45,13 @@ class AuthApiTest extends ApiTestCase
         $this->postJson('/api/auth/logout', [], $this->authHeaders($token))
             ->assertOk();
 
+        $this->app['auth']->forgetGuards();
         $this->getJson('/api/auth/me', $this->authHeaders($token))
             ->assertUnauthorized();
 
-        $this->assertTrue(
-            ApiToken::query()->whereNotNull('revoked_at')->exists()
+        $this->assertSame(
+            0,
+            PersonalAccessToken::query()->count()
         );
     }
 

@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ApiToken;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -32,20 +30,17 @@ class AuthController extends Controller
             return response()->json(['message' => 'Identifiants invalides.'], 422);
         }
 
-        $plainToken = Str::random(64);
-
-        ApiToken::query()->create([
-            'user_id' => $user->id,
-            'name' => $data['device_name'] ?? 'API Token',
-            'token_hash' => hash('sha256', $plainToken),
-            'abilities' => $user->resolvedPermissionCodes(),
-            'expires_at' => now()->addDays(30),
-        ]);
+        $expiresAt = now()->addDays(30);
+        $token = $user->createToken(
+            $data['device_name'] ?? 'API Token',
+            $user->resolvedPermissionCodes(),
+            $expiresAt,
+        );
 
         return response()->json([
             'token_type' => 'Bearer',
-            'access_token' => $plainToken,
-            'expires_at' => now()->addDays(30)->toIso8601String(),
+            'access_token' => $token->plainTextToken,
+            'expires_at' => $expiresAt->toIso8601String(),
             'user' => $this->userPayload($user),
         ]);
     }
@@ -61,10 +56,10 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $token = $request->attributes->get('api_token');
+        $token = $request->user()?->currentAccessToken();
 
-        if ($token instanceof ApiToken) {
-            $token->forceFill(['revoked_at' => now()])->save();
+        if ($token) {
+            $token->delete();
         }
 
         return response()->json([

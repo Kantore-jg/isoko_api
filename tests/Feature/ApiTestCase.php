@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ApiToken;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -20,7 +19,7 @@ abstract class ApiTestCase extends TestCase
         $role = Role::query()->firstOrCreate(
             ['code' => $code],
             [
-                'name'        => str_replace('_', ' ', Str::title(strtolower($code))),
+                'name' => str_replace('_', ' ', Str::title(strtolower($code))),
                 'description' => null,
             ]
         );
@@ -29,8 +28,8 @@ abstract class ApiTestCase extends TestCase
             $permission = Permission::query()->firstOrCreate(
                 ['code' => $permissionCode],
                 [
-                    'name'        => $permissionCode,
-                    'module'      => Str::before($permissionCode, '.'),
+                    'name' => $permissionCode,
+                    'module' => Str::before($permissionCode, '.'),
                     'description' => null,
                 ]
             );
@@ -55,16 +54,9 @@ abstract class ApiTestCase extends TestCase
             'status' => 'ACTIVE',
         ], $attributes));
 
-        $plainToken = Str::random(64);
-        ApiToken::query()->create([
-            'user_id' => $user->id,
-            'name' => 'test',
-            'token_hash' => hash('sha256', $plainToken),
-            'abilities' => $permissionCodes,
-            'expires_at' => now()->addDay(),
-        ]);
+        $token = $user->createToken('test', $user->resolvedPermissionCodes(), now()->addDay());
 
-        return [$user, $plainToken];
+        return [$user, $token->plainTextToken];
     }
 
     protected function authHeaders(string $token): array

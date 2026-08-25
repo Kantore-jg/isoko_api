@@ -6,7 +6,6 @@ use App\Models\Market;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SystemSetting;
-use App\Models\User;
 
 class AdminApiTest extends ApiTestCase
 {
@@ -14,11 +13,13 @@ class AdminApiTest extends ApiTestCase
     {
         [, $token] = $this->makeUserWithToken('SUPER_ADMIN', ['roles.manage', 'permissions.manage']);
 
-        $permission = Permission::query()->create([
-            'code' => 'settings.manage',
-            'name' => 'Gérer les paramètres',
-            'module' => 'administration',
-        ]);
+        $permission = Permission::query()->firstOrCreate(
+            ['code' => 'settings.manage'],
+            [
+                'name' => 'Gérer les paramètres',
+                'module' => 'administration',
+            ]
+        );
 
         $created = $this->postJson('/api/roles', [
             'code' => 'SUPERVISOR',
@@ -155,9 +156,7 @@ class AdminApiTest extends ApiTestCase
 
     public function test_users_route_is_forbidden_without_permission(): void
     {
-        [, $token] = $this->makeUserWithToken('ADMIN', ['dashboard.view']);
-
-        dump(User::first()->resolvedPermissionCodes());
+        [, $token] = $this->makeUserWithToken('SUPERVISOR', ['dashboard.view']);
 
         $this->getJson('/api/users', $this->authHeaders($token))
             ->assertForbidden();

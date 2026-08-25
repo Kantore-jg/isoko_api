@@ -8,5 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Purger chaque nuit les tokens API expirés ou révoqués.
-Schedule::command('tokens:purge')->dailyAt('00:00');
+// Purger chaque nuit les tokens API expirés ou révoqués (Sanctum).
+Schedule::command('sanctum:prune-expired --hours=24')->dailyAt('00:00');
