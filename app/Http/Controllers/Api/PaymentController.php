@@ -244,6 +244,7 @@ class PaymentController extends Controller
                 ->whereIn('id', collect($data['allocations'])->pluck('rent_obligation_id')->all())
                 ->get()
                 ->keyBy('id');
+            $allocatedByObligation = [];
 
             foreach ($data['allocations'] as $allocationData) {
                 $obligation = $obligations->get($allocationData['rent_obligation_id']);
@@ -256,6 +257,15 @@ class PaymentController extends Controller
                 if ((int) $obligation->merchant_id !== (int) $data['merchant_id']) {
                     throw ValidationException::withMessages([
                         'allocations' => 'Chaque allocation doit appartenir au même commerçant que le paiement.',
+                    ]);
+                }
+
+                $obligationId = (int) $obligation->id;
+                $allocatedByObligation[$obligationId] = round(($allocatedByObligation[$obligationId] ?? 0) + (float) $allocationData['amount_allocated'], 2);
+
+                if ($allocatedByObligation[$obligationId] > round((float) $obligation->balance, 2)) {
+                    throw ValidationException::withMessages([
+                        'allocations' => 'Une allocation ne peut pas dépasser le solde restant de l’obligation.',
                     ]);
                 }
             }
