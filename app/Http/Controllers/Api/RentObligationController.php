@@ -16,8 +16,8 @@ class RentObligationController extends Controller
             ->with(['period', 'assignment.place.block', 'merchant'])
             ->orderByDesc('id');
 
-        if ($status = $request->string('status')->trim()) {
-            $query->where('status', $status->toString());
+        if ($status = trim((string) $request->string('status'))) {
+            $query->where('status', $status);
         }
 
         if ($periodId = $request->integer('rent_period_id')) {

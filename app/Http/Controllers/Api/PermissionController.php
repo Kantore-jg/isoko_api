@@ -17,8 +17,8 @@ class PermissionController extends Controller
             ->orderBy('module')
             ->orderBy('code');
 
-        if ($module = $request->string('module')->trim()) {
-            $query->where('module', $module->toString());
+        if ($module = trim((string) $request->string('module'))) {
+            $query->where('module', $module);
         }
 
         if ($search = trim((string) $request->string('q'))) {

@@ -21,8 +21,8 @@ class PlaceController extends Controller
             $query->where('block_id', $blockId);
         }
 
-        if ($status = $request->string('status')->trim()) {
-            $query->where('status', $status->toString());
+        if ($status = trim((string) $request->string('status'))) {
+            $query->where('status', $status);
         }
 
         if ($search = trim((string) $request->string('q'))) {

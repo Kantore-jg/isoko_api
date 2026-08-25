@@ -17,8 +17,8 @@ class BankController extends Controller
             ->withCount('payments')
             ->orderBy('name');
 
-        if ($status = $request->string('status')->trim()) {
-            $query->where('status', $status->toString());
+        if ($status = trim((string) $request->string('status'))) {
+            $query->where('status', $status);
         }
 
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));

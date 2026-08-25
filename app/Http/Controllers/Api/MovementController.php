@@ -47,8 +47,8 @@ class MovementController extends Controller
             $query->where('merchant_id', $merchantId);
         }
 
-        if ($type = $request->string('movement_type')->trim()) {
-            $query->where('movement_type', $type->toString());
+        if ($type = trim((string) $request->string('movement_type'))) {
+            $query->where('movement_type', $type);
         }
 
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));

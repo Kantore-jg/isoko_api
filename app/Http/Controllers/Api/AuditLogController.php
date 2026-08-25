@@ -16,12 +16,12 @@ class AuditLogController extends Controller
             ->with(['user:id,name,role_id', 'user.role:id,code,name'])
             ->orderByDesc('created_at');
 
-        if ($module = $request->string('module')->trim()) {
-            $query->where('module', $module->toString());
+        if ($module = trim((string) $request->string('module'))) {
+            $query->where('module', $module);
         }
 
-        if ($action = $request->string('action')->trim()) {
-            $query->where('action', $action->toString());
+        if ($action = trim((string) $request->string('action'))) {
+            $query->where('action', $action);
         }
 
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));

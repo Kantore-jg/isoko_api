@@ -32,8 +32,8 @@ class MerchantController extends Controller
             ])
             ->orderBy('business_name');
 
-        if ($status = $request->string('status')->trim()) {
-            $query->where('status', $status->toString());
+        if ($status = trim((string) $request->string('status'))) {
+            $query->where('status', $status);
         }
 
         if ($search = trim((string) $request->string('q'))) {

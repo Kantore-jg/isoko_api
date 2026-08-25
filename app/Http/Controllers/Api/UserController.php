@@ -19,8 +19,8 @@ class UserController extends Controller
             ->with(['role:id,code,name'])
             ->orderBy('name');
 
-        if ($status = $request->string('status')->trim()) {
-            $query->where('status', $status->toString());
+        if ($status = trim((string) $request->string('status'))) {
+            $query->where('status', $status);
         }
 
         if ($roleId = $request->integer('role_id')) {

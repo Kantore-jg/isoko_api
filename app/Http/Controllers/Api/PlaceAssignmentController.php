@@ -22,8 +22,8 @@ class PlaceAssignmentController extends Controller
             ->with(['place.block', 'merchant'])
             ->orderByDesc('start_date');
 
-        if ($status = $request->string('status')->trim()) {
-            $query->where('status', $status->toString());
+        if ($status = trim((string) $request->string('status'))) {
+            $query->where('status', $status);
         }
 
         if ($placeId = $request->integer('place_id')) {
