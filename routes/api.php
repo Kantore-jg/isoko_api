@@ -44,8 +44,10 @@ Route::middleware('auth.api')->group(function (): void {
         Route::apiResource('users', UserController::class);
     });
 
+    // Lecture accessible à tout utilisateur authentifié : infos marché affichées sur toutes les pages
+    Route::get('settings', [SettingController::class, 'index']);
+
     Route::middleware('permission:settings.manage')->group(function (): void {
-        Route::get('settings', [SettingController::class, 'index']);
         Route::put('settings', [SettingController::class, 'update']);
         Route::patch('settings', [SettingController::class, 'update']);
     });
