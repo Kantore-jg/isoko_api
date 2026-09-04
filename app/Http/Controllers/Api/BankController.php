@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreBankRequest;
+use App\Http\Requests\UpdateBankRequest;
 use App\Models\Bank;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class BankController extends Controller
 {
@@ -24,17 +25,9 @@ class BankController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreBankRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'code' => ['required', 'string', 'max:50', 'unique:banks,code'],
-            'name' => ['required', 'string', 'max:150'],
-            'account_name' => ['nullable', 'string', 'max:150'],
-            'account_number' => ['nullable', 'string', 'max:100'],
-            'branch' => ['nullable', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'status' => ['nullable', Rule::in(['ACTIVE', 'INACTIVE'])],
-        ]);
+        $data = $request->validated();
 
         $bank = Bank::query()->create($data);
 
@@ -46,17 +39,9 @@ class BankController extends Controller
         return response()->json(['data' => $bank->loadCount('payments')]);
     }
 
-    public function update(Request $request, Bank $bank): JsonResponse
+    public function update(UpdateBankRequest $request, Bank $bank): JsonResponse
     {
-        $data = $request->validate([
-            'code' => ['sometimes', 'string', 'max:50', 'unique:banks,code,' . $bank->id],
-            'name' => ['sometimes', 'string', 'max:150'],
-            'account_name' => ['nullable', 'string', 'max:150'],
-            'account_number' => ['nullable', 'string', 'max:100'],
-            'branch' => ['nullable', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'status' => ['sometimes', Rule::in(['ACTIVE', 'INACTIVE'])],
-        ]);
+        $data = $request->validated();
 
         $bank->update($data);
 

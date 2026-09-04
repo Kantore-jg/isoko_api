@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -39,17 +39,9 @@ class UserController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'role_id' => ['required', 'exists:roles,id'],
-            'name' => ['required', 'string', 'max:150'],
-            'username' => ['required', 'string', 'max:100', 'unique:users,username'],
-            'email' => ['nullable', 'email', 'max:150', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'password' => ['required', 'string', 'min:8'],
-            'status' => ['nullable', Rule::in(['ACTIVE', 'INACTIVE', 'SUSPENDED'])],
-        ]);
+        $data = $request->validated();
 
         $user = User::query()->create([
             'role_id' => $data['role_id'],
@@ -74,17 +66,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $data = $request->validate([
-            'role_id' => ['sometimes', 'exists:roles,id'],
-            'name' => ['sometimes', 'string', 'max:150'],
-            'username' => ['sometimes', 'string', 'max:100', Rule::unique('users', 'username')->ignore($user->id)],
-            'email' => ['nullable', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'password' => ['nullable', 'string', 'min:8'],
-            'status' => ['sometimes', Rule::in(['ACTIVE', 'INACTIVE', 'SUSPENDED'])],
-        ]);
+        $data = $request->validated();
 
         $payload = array_filter([
             'role_id' => $data['role_id'] ?? null,

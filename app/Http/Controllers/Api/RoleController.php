@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRoleRequest;
+use App\Http\Requests\UpdateRoleRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -29,15 +30,9 @@ class RoleController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreRoleRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'code' => ['required', 'string', 'max:50', 'unique:roles,code'],
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => ['integer', 'exists:permissions,id'],
-        ]);
+        $data = $request->validated();
 
         $role = Role::query()->create([
             'code' => $data['code'],
@@ -60,15 +55,9 @@ class RoleController extends Controller
         ]);
     }
 
-    public function update(Request $request, Role $role): JsonResponse
+    public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
-        $data = $request->validate([
-            'code' => ['sometimes', 'string', 'max:50', Rule::unique('roles', 'code')->ignore($role->id)],
-            'name' => ['sometimes', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => ['integer', 'exists:permissions,id'],
-        ]);
+        $data = $request->validated();
 
         $role->update(array_filter([
             'code' => $data['code'] ?? null,

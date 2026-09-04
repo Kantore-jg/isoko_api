@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePaymentRequest;
+use App\Http\Requests\VoidPaymentRequest;
 use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
@@ -13,7 +15,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
@@ -50,8 +51,8 @@ class PaymentController extends Controller
                 'receiver:id,name,role_id',
                 'receiver.role:id,code,name',
                 'allocations:id,payment_id,rent_obligation_id,amount_allocated',
-                'allocations.obligation:id,place_id,merchant_id,period_id,period_year,period_month,period_label,amount_expected,amount_paid,balance,status,due_date,paid_at',
-                'allocations.obligation.period:id,year,month,label',
+                'allocations.obligation:id,place_id,merchant_id,rent_period_id,amount_expected,amount_paid,balance,status,due_date,paid_at',
+                'allocations.obligation.period:id,year,month',
             ])
             ->orderByDesc('payment_date');
 
@@ -66,23 +67,9 @@ class PaymentController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StorePaymentRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'merchant_id' => ['required', 'exists:merchants,id'],
-            'payment_date' => ['required', 'date'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'bank_id' => ['required', 'exists:banks,id'],
-            'reference_number' => ['required', 'string', 'max:100', 'unique:payments,reference_number'],
-            'payment_method' => ['nullable', 'string', 'max:100'],
-            'notes' => ['nullable', 'string'],
-            'received_by' => ['nullable', 'exists:users,id'],
-            'auto_allocate' => ['nullable', 'boolean'],
-            'as_of_date' => ['nullable', 'date'],
-            'allocations' => ['nullable', 'array', 'min:1'],
-            'allocations.*.rent_obligation_id' => ['required', 'exists:rent_obligations,id'],
-            'allocations.*.amount_allocated' => ['required', 'numeric', 'min:0.01'],
-        ]);
+        $data = $request->validated();
 
         $allocations = $this->resolveAllocations($data);
 
@@ -156,13 +143,17 @@ class PaymentController extends Controller
             'merchant_id' => ['required', 'exists:merchants,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'as_of_date' => ['nullable', 'date'],
+            'period_year' => ['nullable', 'integer', 'min:2000'],
+            'period_month' => ['nullable', 'integer', 'between:1,12'],
         ]);
 
         return response()->json([
             'data' => $this->allocationService->buildForMerchant(
                 (int) $data['merchant_id'],
                 (float) $data['amount'],
-                $data['as_of_date'] ?? null
+                $data['as_of_date'] ?? null,
+                isset($data['period_year']) ? (int) $data['period_year'] : null,
+                isset($data['period_month']) ? (int) $data['period_month'] : null,
             ),
         ]);
     }
@@ -174,11 +165,9 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function void(Request $request, Payment $payment): JsonResponse
+    public function void(VoidPaymentRequest $request, Payment $payment): JsonResponse
     {
-        $data = $request->validate([
-            'void_reason' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validated();
 
         if ($payment->status === 'VOIDED') {
             return response()->json([
@@ -282,7 +271,9 @@ class PaymentController extends Controller
         $preview = $this->allocationService->buildForMerchant(
             (int) $data['merchant_id'],
             (float) $data['amount'],
-            $data['as_of_date'] ?? null
+            $data['as_of_date'] ?? null,
+            isset($data['period_year']) ? (int) $data['period_year'] : null,
+            isset($data['period_month']) ? (int) $data['period_month'] : null,
         );
 
         if (round((float) $preview['remaining'], 2) > 0.0) {

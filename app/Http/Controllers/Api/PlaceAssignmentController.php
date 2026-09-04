@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAssignmentRequest;
+use App\Http\Requests\TerminateAssignmentRequest;
+use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\AuditLog;
 use App\Models\Place;
 use App\Models\PlaceAssignment;
@@ -11,7 +14,6 @@ use App\Models\Merchant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PlaceAssignmentController extends Controller
@@ -37,19 +39,9 @@ class PlaceAssignmentController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreAssignmentRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'place_id' => ['required', 'exists:places,id'],
-            'merchant_id' => ['required', 'exists:merchants,id'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'rent_rate_id' => ['nullable', 'exists:rent_rates,id'],
-            'rent_amount' => ['required', 'numeric', 'min:0'],
-            'status' => ['nullable', Rule::in(['ACTIVE', 'ENDED', 'CANCELLED'])],
-            'assignment_reason' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $data = $request->validated();
 
         $this->assertNoOverlap((int) $data['place_id'], $data['start_date'], $data['end_date'] ?? null);
 
@@ -105,19 +97,9 @@ class PlaceAssignmentController extends Controller
         ]);
     }
 
-    public function update(Request $request, PlaceAssignment $assignment): JsonResponse
+    public function update(UpdateAssignmentRequest $request, PlaceAssignment $assignment): JsonResponse
     {
-        $data = $request->validate([
-            'place_id' => ['sometimes', 'exists:places,id'],
-            'merchant_id' => ['sometimes', 'exists:merchants,id'],
-            'start_date' => ['sometimes', 'date'],
-            'end_date' => ['nullable', 'date'],
-            'rent_rate_id' => ['nullable', 'exists:rent_rates,id'],
-            'rent_amount' => ['sometimes', 'numeric', 'min:0'],
-            'status' => ['sometimes', Rule::in(['ACTIVE', 'ENDED', 'CANCELLED'])],
-            'assignment_reason' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $data = $request->validated();
 
         $placeId = (int) ($data['place_id'] ?? $assignment->place_id);
         $startDate = $data['start_date'] ?? $assignment->start_date->toDateString();
@@ -135,12 +117,9 @@ class PlaceAssignmentController extends Controller
         ]);
     }
 
-    public function terminate(Request $request, PlaceAssignment $assignment): JsonResponse
+    public function terminate(TerminateAssignmentRequest $request, PlaceAssignment $assignment): JsonResponse
     {
-        $data = $request->validate([
-            'end_date' => ['required', 'date', 'after_or_equal:' . $assignment->start_date->format('Y-m-d')],
-            'reason' => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validated();
 
         $user = $request->user();
 

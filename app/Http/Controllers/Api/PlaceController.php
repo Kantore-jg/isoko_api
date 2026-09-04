@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePlaceRequest;
+use App\Http\Requests\UpdatePlaceRequest;
 use App\Models\Place;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class PlaceController extends Controller
 {
@@ -14,7 +15,7 @@ class PlaceController extends Controller
     {
         $query = Place::query()
             ->select(['id', 'block_id', 'code', 'name', 'description', 'surface', 'type', 'status', 'created_at', 'updated_at'])
-            ->with(['block:id,code,name'])
+            ->with(['block:id,code,name,default_rent_amount'])
             ->orderBy('code');
 
         if ($blockId = $request->integer('block_id')) {
@@ -35,50 +36,34 @@ class PlaceController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StorePlaceRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'block_id' => ['required', 'exists:blocks,id'],
-            'code' => ['required', 'string', 'max:50', 'unique:places,code'],
-            'name' => ['nullable', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'surface' => ['nullable', 'numeric', 'min:0'],
-            'type' => ['nullable', Rule::in(['STANDARD', 'KIOSK', 'BOUTIQUE', 'STALL', 'WAREHOUSE', 'OTHER'])],
-            'status' => ['nullable', Rule::in(['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'INACTIVE'])],
-        ]);
+        $data = $request->validated();
 
         $place = Place::query()->create($data);
 
         return response()->json([
             'message' => 'Place créée avec succès.',
-            'data' => $place->load('block'),
+            'data' => $place->load('block:id,code,name,default_rent_amount'),
         ], 201);
     }
 
     public function show(Place $place): JsonResponse
     {
         return response()->json([
-            'data' => $place->load(['block', 'assignments.merchant']),
+            'data' => $place->load(['block:id,code,name,default_rent_amount', 'assignments.merchant']),
         ]);
     }
 
-    public function update(Request $request, Place $place): JsonResponse
+    public function update(UpdatePlaceRequest $request, Place $place): JsonResponse
     {
-        $data = $request->validate([
-            'block_id' => ['sometimes', 'exists:blocks,id'],
-            'code' => ['sometimes', 'string', 'max:50', 'unique:places,code,' . $place->id],
-            'name' => ['nullable', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'surface' => ['nullable', 'numeric', 'min:0'],
-            'type' => ['sometimes', Rule::in(['STANDARD', 'KIOSK', 'BOUTIQUE', 'STALL', 'WAREHOUSE', 'OTHER'])],
-            'status' => ['sometimes', Rule::in(['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'INACTIVE'])],
-        ]);
+        $data = $request->validated();
 
         $place->update($data);
 
         return response()->json([
             'message' => 'Place mise à jour.',
-            'data' => $place->fresh()->load('block'),
+            'data' => $place->fresh()->load('block:id,code,name,default_rent_amount'),
         ]);
     }
 

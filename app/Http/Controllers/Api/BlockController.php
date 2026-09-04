@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreBlockRequest;
+use App\Http\Requests\UpdateBlockRequest;
 use App\Models\Block;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,15 +28,9 @@ class BlockController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreBlockRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'code' => ['required', 'string', 'max:50', 'unique:blocks,code'],
-            'name' => ['required', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'default_rent_amount' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['nullable', 'in:ACTIVE,INACTIVE'],
-        ]);
+        $data = $request->validated();
 
         $block = Block::query()->create($data);
 
@@ -51,15 +47,9 @@ class BlockController extends Controller
         ]);
     }
 
-    public function update(Request $request, Block $block): JsonResponse
+    public function update(UpdateBlockRequest $request, Block $block): JsonResponse
     {
-        $data = $request->validate([
-            'code' => ['sometimes', 'string', 'max:50', 'unique:blocks,code,' . $block->id],
-            'name' => ['sometimes', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-            'default_rent_amount' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['sometimes', 'in:ACTIVE,INACTIVE'],
-        ]);
+        $data = $request->validated();
 
         $block->update($data);
 

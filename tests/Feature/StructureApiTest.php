@@ -64,6 +64,10 @@ class StructureApiTest extends ApiTestCase
             'code' => 'P-001',
         ]);
 
+        $this->getJson('/api/places', $this->authHeaders($token))
+            ->assertOk()
+            ->assertJsonPath('data.0.block.default_rent_amount', '40000.00');
+
         $this->deleteJson("/api/places/{$place['id']}", [], $this->authHeaders($token))
             ->assertOk();
     }

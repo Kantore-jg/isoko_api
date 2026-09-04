@@ -21,8 +21,4 @@ class Market extends Model
         'status',
     ];
 
-    public function blocks()
-    {
-        return $this->hasMany(Block::class);
-    }
 }

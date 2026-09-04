@@ -25,7 +25,6 @@ class MovementController extends Controller
                 'notes',
                 'created_by',
                 'created_at',
-                'updated_at',
             ])
             ->with([
                 'place:id,block_id,code',

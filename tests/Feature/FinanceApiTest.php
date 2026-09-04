@@ -204,4 +204,46 @@ class FinanceApiTest extends ApiTestCase
             'status' => 'CANCELLED',
         ]);
     }
+
+    public function test_movements_index_loads_without_updated_at_column(): void
+    {
+        [, $token] = $this->makeUserWithToken('ACCOUNTANT', [
+            'assignments.manage',
+            'blocks.manage',
+            'places.manage',
+            'reports.view',
+        ]);
+
+        $block = Block::query()->create([
+            'code' => 'MOV-BLK',
+            'name' => 'Bloc Mouvements',
+            'default_rent_amount' => 50000,
+            'status' => 'ACTIVE',
+        ]);
+
+        $place = Place::query()->create([
+            'block_id' => $block->id,
+            'code' => 'MOV-PL',
+            'name' => 'Place Mouvement',
+            'status' => 'AVAILABLE',
+        ]);
+
+        $merchant = Merchant::query()->create([
+            'merchant_code' => 'MER-MOV',
+            'business_name' => 'Marchand Mouvement',
+            'status' => 'ACTIVE',
+        ]);
+
+        PlaceAssignment::query()->create([
+            'place_id' => $place->id,
+            'merchant_id' => $merchant->id,
+            'start_date' => '2026-08-01',
+            'rent_amount' => 50000,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->getJson('/api/movements', $this->authHeaders($token))
+            ->assertOk()
+            ->assertJsonPath('data.0.place_id', $place->id);
+    }
 }

@@ -12,7 +12,7 @@ class AuditLogController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = AuditLog::query()
-            ->select(['id', 'user_id', 'action', 'module', 'entity_type', 'entity_id', 'old_values', 'new_values', 'created_at', 'updated_at'])
+            ->select(['id', 'user_id', 'action', 'module', 'entity_type', 'entity_id', 'old_values', 'new_values', 'ip_address', 'created_at'])
             ->with(['user:id,name,role_id', 'user.role:id,code,name'])
             ->orderByDesc('created_at');
 

@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreMerchantRequest;
+use App\Http\Requests\UpdateMerchantRequest;
 use App\Models\Merchant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class MerchantController extends Controller
 {
@@ -47,24 +48,9 @@ class MerchantController extends Controller
         return response()->json($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreMerchantRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'merchant_code' => ['required', 'string', 'max:50', 'unique:merchants,merchant_code'],
-            'business_name' => ['required', 'string', 'max:200'],
-            'owner_name' => ['nullable', 'string', 'max:200'],
-            'national_id' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'phone_secondary' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:150'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'business_type' => ['nullable', 'string', 'max:100'],
-            'registration_number' => ['nullable', 'string', 'max:100'],
-            'tax_number' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'CLOSED'])],
-            'registration_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $data = $request->validated();
 
         $merchant = Merchant::query()->create($data);
 
@@ -81,24 +67,9 @@ class MerchantController extends Controller
         ]);
     }
 
-    public function update(Request $request, Merchant $merchant): JsonResponse
+    public function update(UpdateMerchantRequest $request, Merchant $merchant): JsonResponse
     {
-        $data = $request->validate([
-            'merchant_code' => ['sometimes', 'string', 'max:50', 'unique:merchants,merchant_code,' . $merchant->id],
-            'business_name' => ['sometimes', 'string', 'max:200'],
-            'owner_name' => ['nullable', 'string', 'max:200'],
-            'national_id' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'phone_secondary' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:150'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'business_type' => ['nullable', 'string', 'max:100'],
-            'registration_number' => ['nullable', 'string', 'max:100'],
-            'tax_number' => ['nullable', 'string', 'max:100'],
-            'status' => ['sometimes', Rule::in(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'CLOSED'])],
-            'registration_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string'],
-        ]);
+        $data = $request->validated();
 
         $merchant->update($data);
 
